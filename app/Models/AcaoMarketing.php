@@ -9,11 +9,18 @@ class AcaoMarketing extends Model
 {
     use HasFactory;
 
-    protected $table = 'acao_marketings';
+    protected $table = 'acao';
 
     protected $fillable = [
-        'tipo',
+        'codigo_acao',
+        'investimento',
         'data_prevista',
-        'investimento'
+        'data_cadastro'
     ];
+
+    public function tipoAcao()
+    {
+        return $this->belongsTo(TipoAcao::class, 'codigo_acao', 'codigo_acao'); // ✅ Corrigindo a FK e PK
+    }
 }
+

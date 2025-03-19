@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gestão de Verbas - PharmaViews</title>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+
+
     <link rel="stylesheet" href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <style>
@@ -143,20 +145,18 @@
                     <div class="form-group">
                         <label for="edit-tipo">Ação</label>
                         <select id="edit-tipo" name="tipo" class="form-control">
-                            <option value="Palestra">Palestra</option>
-                            <option value="Evento">Evento</option>
-                            <option value="Apoio Gráfico">Apoio Gráfico</option>
+                            @foreach($tiposAcao as $tipo)
+                            <option value="{{ $tipo->codigo_acao }}">{{ $tipo->nome_acao }}</option>
+                            @endforeach
                         </select>
                     </div>
                     <div class="form-group">
-
                         <label for="edit-data_prevista">Data prevista</label>
-
                         <input type="text" id="edit-data_prevista" name="data_prevista" class="form-control">
                     </div>
                     <div class="form-group">
                         <label for="edit-investimento">Investimento previsto</label>
-                        <input type="number" id="edit-investimento" name="investimento" class="form-control" step="0.01">
+                        <input type="text" id="edit-investimento" name="investimento" class="form-control" step="0.01">
                     </div>
                     <button type="submit" class="btn btn-primary">Salvar Alterações</button>
                 </form>
@@ -164,6 +164,7 @@
         </div>
     </div>
 </div>
+
 
 
 <body>
@@ -184,28 +185,23 @@
             <form id="marketing-form" class="form-container" action="{{ route('acoes.store') }}" method="POST">
                 @csrf
                 <div class="form-group">
-                    <label for="tipo">Ação</label>
-                    <select id="tipo" name="tipo" class="form-control" required>
+                    <label for="codigo_acao">Ação</label>
+                    <select id="codigo_acao" name="codigo_acao" class="form-control" required>
                         <option value="">Selecione o tipo da ação...</option>
-                        <option value="Palestra">Palestra</option>
-                        <option value="Evento">Evento</option>
-                        <option value="Apoio Gráfico">Apoio Gráfico</option>
+                        @foreach($tiposAcao as $tipo)
+                        <option value="{{ $tipo->codigo_acao }}">{{ $tipo->nome_acao }}</option>
+                        @endforeach
                     </select>
                 </div>
                 <div class="form-group">
                     <label for="data_prevista">Data prevista</label>
-                    <input type="text" id="data_prevista" name="data_prevista" class="form-control datepicker"
-                        placeholder="DD/MM/AAAA"
-                        value="{{ old('data_prevista') ? date('d/m/Y', strtotime(old('data_prevista'))) : '' }}" required>
+                    <input type="text" id="data_prevista" name="data_prevista" class="form-control" required>
                 </div>
-
-
-
                 <div class="form-group">
                     <label for="investimento">Investimento previsto</label>
                     <div class="input-group">
                         <span class="input-group-addon">R$</span>
-                        <input type="number" id="investimento" name="investimento" class="form-control" step="0.01" required placeholder="0,00">
+                        <input type="text" id="investimento" name="investimento" class="form-control money" step="0.01" placeholder="0,00">
                     </div>
                 </div>
                 <div class="button-group">
@@ -213,6 +209,7 @@
                     <button type="submit" class="btn btn-adicionar"><i class="fa fa-plus"></i> Adicionar</button>
                 </div>
             </form>
+
 
 
             <div class="table">
@@ -229,16 +226,21 @@
                     <tbody>
                         @foreach($acoes as $acao)
                         <tr>
-                            <td>{{ $acao->tipo }}</td>
+                            <td>{{ $acao->tipoAcao->nome_acao ?? 'N/A' }}</td> {{-- Corrigido para manter a consistência --}}
                             <td>{{ date('d/m/Y', strtotime($acao->data_prevista)) }}</td>
                             <td>R$ {{ number_format($acao->investimento, 2, ',', '.') }}</td>
                             <td>
-                                <a href="#" class="editar-acao" data-id="{{ $acao->id }}" data-tipo="{{ $acao->tipo }}" data-data_prevista="{{ $acao->data_prevista }}" data-investimento="{{ $acao->investimento }}">
+                                <a href="#" class="editar-acao"
+                                    data-id="{{ $acao->id }}"
+                                    data-codigo_acao="{{ $acao->codigo_acao }}"
+                                    data-data_prevista="{{ $acao->data_prevista }}"
+                                    data-investimento="{{ $acao->investimento }}">
                                     <i class="fa fa-pencil-alt" style="color:blue; cursor:pointer;"></i>
                                 </a>
                             </td>
+
                             <td>
-                                <form id="delete-form" action="{{ route('acoes.destroy', $acao->id) }}" method="POST">
+                                <form class="delete-form" action="{{ route('acoes.destroy', $acao->id) }}" method="POST">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" style="border:none; background:none; cursor:pointer;">
@@ -249,6 +251,7 @@
                         </tr>
                         @endforeach
                     </tbody>
+
                 </table>
 
             </div>
@@ -262,200 +265,185 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
     <script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.mask/1.14.16/jquery.mask.min.js"></script>
     <link rel="stylesheet" href="https://code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
-    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
-
 
     <script>
         $(document).ready(function() {
+            $("#investimento").mask("000.000.000,00", {
+                reverse: true
+            });
 
             $("#data_prevista").datepicker({
                 dateFormat: "dd/mm/yy",
                 minDate: +10,
                 dayNamesMin: ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"],
-                monthNames: ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"],
+                monthNames: [
+                    "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
+                    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
+                ],
                 showAnim: "slideDown"
             });
 
             $("#marketing-form").submit(function(event) {
-                let dataSelecionada = $("#data_prevista").val().split('/');
-                let dataMinima = new Date();
-                dataMinima.setDate(dataMinima.getDate() + 10);
+                let dataSelecionada = $("#data_prevista").val();
+                let partesData = dataSelecionada.split("/");
 
-                let dataFormatada = new Date(dataSelecionada[2], dataSelecionada[1] - 1, dataSelecionada[0]); // Converte para objeto Date
-
-                if (dataFormatada < dataMinima) {
-                    alert("A data deve ser no mínimo 10 dias a partir de hoje.");
+                if (partesData.length !== 3) {
+                    alert("Formato de data inválido!");
                     event.preventDefault();
+                    return;
                 }
+
+                let dataFormatada = `${partesData[2]}-${partesData[1]}-${partesData[0]}`;
+                $("#data_prevista").val(dataFormatada);
+
+                let investimentoFormatado = $("#investimento").val().replace(/\./g, "").replace(",", ".");
+                $("#investimento").val(investimentoFormatado);
+
+                return true;
+            });
+
+            $("#investimento").on("input", function() {
+                let valor = $(this).val();
+                $(this).val(valor.replace(/[^\d,]/g, ""));
             });
         });
-    </script>
 
 
-    <script>
-        $(document).ready(function() {
-            $('#marketing-table').DataTable({
-                "paging": false,
-                "info": false,
-                "searching": false,
-                "order": [
-                    [1, "asc"]
-                ],
-                "columnDefs": [{
-                        "orderable": true,
-                        "targets": [0, 1, 2]
+
+        $("#marketing-table").DataTable({
+            paging: false,
+            info: false,
+            searching: false,
+            order: [
+                [1, "asc"]
+            ],
+            columnDefs: [{
+                orderable: true,
+                targets: [0, 1, 2]
+            }, {
+                orderable: false,
+                targets: [3, 4]
+            }]
+        });
+
+        $(".btn-limpar").click(function() {
+            $("#marketing-form")[0].reset();
+        });
+
+        $(document).on("submit", ".delete-form", function(event) {
+            event.preventDefault();
+            let form = $(this);
+            let url = form.attr("action");
+            let row = form.closest("tr");
+
+            if (confirm("Tem certeza que deseja excluir esta ação?")) {
+                $.ajax({
+                    url: url,
+                    type: "POST",
+                    data: form.serialize(),
+                    success: function() {
+                        row.fadeOut(300, function() {
+                            $(this).remove();
+                        });
                     },
-                    {
-                        "orderable": false,
-                        "targets": [3, 4]
+                    error: function(error) {
+                        console.error("Erro ao excluir ação:", error);
+                        alert("Erro ao excluir ação.");
                     }
-                ]
-            });
-        });
-        $(document).ready(function() {
-            $(".btn-limpar").click(function() {
-                $("#marketing-form")[0].reset();
-            });
-        });
-        $(document).ready(function() {
-            $(document).on("submit", "#delete-form", function(event) {
-                event.preventDefault();
-
-                let form = $(this);
-                let url = form.attr("action");
-                let row = form.closest("tr");
-
-                if (confirm("Tem certeza que deseja excluir esta ação?")) {
-                    $.ajax({
-                        url: url,
-                        type: "POST",
-                        data: form.serialize(),
-                        success: function() {
-                            row.fadeOut(300, function() {
-                                $(this).remove();
-                            });
-                        },
-                        error: function(error) {
-                            console.log("Erro ao excluir ação:", error);
-                        }
-                    });
-                }
-            });
-        });
-
-        $(document).ready(function() {
-            let hoje = new Date();
-            hoje.setDate(hoje.getDate() + 10);
-            let dataMinima = hoje.toLocaleDateString('pt-BR', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric'
-            });
-            $("#data_prevista").attr("min", dataMinima);
-            $('.date-format').mask('00/00/0000');
-
-
-
-            $(document).ready(function() {
-                $('.money-format').mask('000.000.000,00', {
-                    reverse: true
                 });
-            });
+            }
         });
-    </script>
 
-<script>
-    $(document).ready(function () {
-
-
-        function formatarDataParaEnvio(data) {
-            if (!data) return '';
-            let partes = data.split('/');
-            return partes.length === 3 ? `${partes[2]}-${partes[1]}-${partes[0]}` : data;
-        }
-
-
-        function formatarDataParaExibir(data) {
-            if (!data) return '';
-            let partes = data.split('-');
-            return partes.length === 3 ? `${partes[2]}/${partes[1]}/${partes[0]}` : data;
-        }
-
-
-        $(".editar-acao").click(function () {
+        $(".editar-acao").click(function() {
             let id = $(this).data("id"),
-                tipo = $(this).data("tipo"),
-                dataPrevista = formatarDataParaEnvio($(this).data("data_prevista")),
+                codigoAcao = $(this).data("codigo_acao"),
+                dataPrevista = formatarDataParaExibir($(this).data("data_prevista")),
                 investimento = $(this).data("investimento");
 
             $("#edit-id").val(id);
-            $("#edit-tipo").val(tipo);
             $("#edit-data_prevista").val(dataPrevista);
-            $("#edit-investimento").val(investimento);
+            $("#edit-tipo").val(codigoAcao).prop("selected", true);
 
+            let investimentoFormatado = parseFloat(investimento).toLocaleString("pt-BR", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+
+            $("#edit-investimento").val(investimentoFormatado).trigger("input");
             $("#editModal").modal("show");
         });
 
-        $("#edit-form").submit(function (event) {
+        $("#edit-investimento").on("input", function() {
+            let valor = $(this).val();
+            if (valor.length > 0) {
+                $(this).mask("#.##0,00", {
+                    reverse: true
+                });
+            }
+        });
+
+        $("#edit-form").submit(function(event) {
             event.preventDefault();
 
             let id = $("#edit-id").val(),
                 url = `/acoes/${id}`,
-                dataPrevista = formatarDataParaEnvio($("#edit-data_prevista").val()); // Converte antes de enviar
+                dataPrevista = formatarDataParaEnvio($("#edit-data_prevista").val()),
+                investimentoFormatado = formatarInvestimentoParaEnvio($("#edit-investimento").val());
 
             let dados = {
                 _method: "PUT",
-                _token: "{{ csrf_token() }}",
+                _token: $("input[name=_token]").val(),
                 tipo: $("#edit-tipo").val(),
                 data_prevista: dataPrevista,
-                investimento: $("#edit-investimento").val()
+                investimento: investimentoFormatado
             };
 
             $.ajax({
                 url: url,
                 type: "POST",
                 data: dados,
-                success: function (response) {
+                success: function(response) {
                     $("#editModal").modal("hide");
-
                     let row = $(`a[data-id='${id}']`).closest("tr");
                     row.find("td:nth-child(1)").text(response.tipo);
                     row.find("td:nth-child(2)").text(formatarDataParaExibir(response.data_prevista));
-                    row.find("td:nth-child(3)").text("R$ " + response.investimento);
+                    row.find("td:nth-child(3)").text("R$ " + parseFloat(response.investimento).toLocaleString("pt-BR", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2
+                    }));
 
                     alert("Ação atualizada com sucesso!");
                 },
-                error: function (error) {
+                error: function(error) {
                     console.log("Erro ao atualizar ação:", error);
                     alert("Ocorreu um erro ao atualizar a ação.");
                 }
             });
         });
-    });
-</script>
 
+        function formatarDataParaExibir(data) {
+            if (!data) return "";
+            let partes = data.split("-");
+            return partes.length === 3 ? `${partes[2]}/${partes[1]}/${partes[0]}` : data;
+        }
 
-    <script>
-        $(document).ready(function() {
-            let hoje = new Date();
-            hoje.setDate(hoje.getDate() + 10);
-            let dataMinima = hoje.toISOString().split('T')[0];
+        function formatarDataParaEnvio(data) {
+            if (!data) return "";
+            let partes = data.split("/");
+            return partes.length === 3 ? `${partes[2]}-${partes[1]}-${partes[0]}` : data;
+        }
 
-            $("#data_prevista").attr("min", dataMinima);
-
-
-            $("#marketing-form").submit(function(event) {
-                let dataSelecionada = $("#data_prevista").val();
-                if (dataSelecionada < dataMinima) {
-                    alert("A data deve ser no mínimo 10 dias a partir de hoje.");
-                    event.preventDefault();
-                }
-            });
-        });
+        function formatarInvestimentoParaEnvio(valor) {
+            if (!valor) return "";
+            return valor.replace(/\./g, "").replace(",", ".");
+        }
     </script>
+
 </body>
 
 </html>

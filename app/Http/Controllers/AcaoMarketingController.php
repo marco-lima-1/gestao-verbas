@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AcaoMarketing;
+use App\Models\TipoAcao;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -11,62 +12,52 @@ class AcaoMarketingController extends Controller
 
     public function index()
     {
-        $acoes = AcaoMarketing::all();
-        return view('marketing', compact('acoes'));
+        $acoes = AcaoMarketing::with('tipoAcao')->get();
+        $tiposAcao = TipoAcao::all();
+
+        return view('marketing', compact('acoes', 'tiposAcao'));
     }
-
     public function store(Request $request)
-{
-    Log::info('Recebendo requisição para criar uma nova ação de marketing', [
-        'dados_recebidos' => $request->all()
-    ]);
+    {
+        $request->validate([
+            'codigo_acao' => 'required|exists:tipo_acao,codigo_acao',
+            'data_prevista' => 'required|date|after:today',
+            'investimento' => 'required|numeric|min:0',
+        ]);
 
-    $request->validate([
-        'tipo' => 'required|string',
-        'data_prevista' => 'required|regex:/\d{2}\/\d{2}\/\d{4}/',
-        'investimento' => 'required|numeric|min:0',
-    ]);
+        Log::info('Dados recebidos no store:', $request->all());
 
-    $acao = AcaoMarketing::create([
-        'tipo' => $request->tipo,
-        'data_prevista' => $request->data_prevista,
-        'investimento' => $request->investimento
-    ]);
+        AcaoMarketing::create([
+            'codigo_acao' => $request->codigo_acao,
+            'data_prevista' => date('Y-m-d', strtotime(str_replace('/', '-', $request->data_prevista))),
+            'investimento' => $request->investimento,
+            'data_cadastro' => now(),
+        ]);
 
-    Log::info('Ação de marketing criada com sucesso', [
-        'acao_criada' => $acao
-    ]);
+        return redirect()->route('acoes.index');
+    }
+    public function update(Request $request, $id)
+    {
+        $request->validate([
+            'tipo' => 'required|exists:tipo_acao,codigo_acao',
+            'data_prevista' => 'required|date',
+            'investimento' => 'required|numeric|min:0',
+        ]);
 
-    return redirect()->route('acoes.index');
-}
+        $acao = AcaoMarketing::findOrFail($id);
+        $acao->update([
+            'codigo_acao' => $request->tipo,
+            'data_prevista' => date('Y-m-d', strtotime(str_replace('/', '-', $request->data_prevista))),
+            'investimento' => $request->investimento
+        ]);
 
-public function update(Request $request, $id)
-{
-    $request->validate([
-        'tipo' => 'required|string',
-        'data_prevista' => 'required|date|after:today',
-        'investimento' => 'required|numeric|min:0',
-    ]);
-
-    // Converte DD/MM/YYYY para YYYY-MM-DD antes de salvar no banco
-    $dataFormatada = date('Y-m-d', strtotime(str_replace('/', '-', $request->data_prevista)));
-
-    $acao = AcaoMarketing::findOrFail($id);
-    $acao->update([
-        'tipo' => $request->tipo,
-        'data_prevista' => $dataFormatada,
-        'investimento' => $request->investimento
-    ]);
-
-    return response()->json([
-        'tipo' => $acao->tipo,
-        'data_prevista' => date('d/m/Y', strtotime($acao->data_prevista)), // Retorna no formato correto
-        'investimento' => number_format($acao->investimento, 2, ',', '.')
-    ]);
-}
-
-
-
+        return response()->json([
+            'success' => true,
+            'tipo' => $acao->tipoAcao->nome_acao,
+            'data_prevista' => date('d/m/Y', strtotime($acao->data_prevista)),
+            'investimento' => number_format($acao->investimento, 2, ',', '.')
+        ]);
+    }
     public function destroy(string $id)
     {
         AcaoMarketing::destroy($id);
