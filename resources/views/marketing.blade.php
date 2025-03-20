@@ -226,7 +226,7 @@
                     <tbody>
                         @foreach($acoes as $acao)
                         <tr>
-                            <td>{{ $acao->tipoAcao->nome_acao ?? 'N/A' }}</td> {{-- Corrigido para manter a consistência --}}
+                            <td>{{ $acao->tipoAcao->nome_acao ?? 'N/A' }}</td>
                             <td>{{ date('d/m/Y', strtotime($acao->data_prevista)) }}</td>
                             <td>R$ {{ number_format($acao->investimento, 2, ',', '.') }}</td>
                             <td>
@@ -273,8 +273,16 @@
 
     <script>
         $(document).ready(function() {
-            $("#investimento").mask("000.000.000,00", {
-                reverse: true
+            function aplicarMascaraInvestimento() {
+                $(".money").mask("#.##0,00", {
+                    reverse: true
+                });
+            }
+
+            aplicarMascaraInvestimento();
+
+            $("#investimento").on("input", function() {
+                aplicarMascaraInvestimento();
             });
 
             $("#data_prevista").datepicker({
@@ -304,14 +312,27 @@
                 let investimentoFormatado = $("#investimento").val().replace(/\./g, "").replace(",", ".");
                 $("#investimento").val(investimentoFormatado);
 
+                let dataAtual = new Date();
+                let dataMinima = new Date();
+                dataMinima.setDate(dataMinima.getDate() + 10);
+
+                let dataUsuario = new Date(partesData[2], partesData[1] - 1, partesData[0]);
+                if (dataUsuario < dataMinima) {
+                    alert("A data deve ser no mínimo 10 dias a partir de hoje.");
+                    event.preventDefault();
+                    return;
+                }
+
                 return true;
             });
 
             $("#investimento").on("input", function() {
-                let valor = $(this).val();
-                $(this).val(valor.replace(/[^\d,]/g, ""));
+                aplicarMascaraInvestimento();
             });
         });
+
+
+
 
 
 
